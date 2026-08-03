@@ -1,0 +1,10 @@
+*.so
+*.o
+
+.claude/
+.vscode/
+.cache/
+
+.clang-format
+
+test/traces/
