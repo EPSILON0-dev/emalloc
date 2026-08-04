@@ -53,3 +53,8 @@ void* brk_alloc(size_t size)
     // Return the address of the allocation
     return alloc_ptr;
 }
+
+void *brk_get_allocated_heap_end(void)
+{
+    return heap_state.allocated_heap_end;
+}

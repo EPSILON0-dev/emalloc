@@ -16,7 +16,7 @@
 // #define DEBUG_DUMP_BUDDY_ARENAS
 
 // Panic when a free call fails instead of skipping deallocation
-#define DEBUG_PANIC_ON_FREE_FAIL
+// #define DEBUG_PANIC_ON_FREE_FAIL
 
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
 
@@ -27,7 +27,7 @@
 // The allocation size with which mmap is called directly
 #define DIRECT_MMAP_THRESHOLD 20  // 1MiB
 
-// Magic values to be used in slab allocator headers
+// Magic values to be used in the slab allocator's headers
 #define SLAB_ALLOCATOR_MAGIC 0x11ff22ff
 
 // The maximum and minimum object size for slab allocator
@@ -38,7 +38,7 @@
 // Slab sizes for each object size
 #define SLAB_ALLOCATOR_SLAB_SIZE 16  // 64KiB
 
-// Magic values to be used in slab allocator headers
+// Magic values to be used in the buddy allocator's headers
 #define BUDDY_ALLOCATOR_MAGIC1 0xff88ff99
 #define BUDDY_ALLOCATOR_MAGIC2 0x3c33
 
@@ -56,6 +56,12 @@
 
 #define BUDDY_SLAB_BITMAP_BYTES ((1 << BUDDY_ALLOCATOR_SLAB_SLOTS) / 8)
 #define BUDDY_SLOT_BITMAP_BYTES ((1 << BUDDY_ALLOCATOR_SLOTS) / 8 * 2)
+
+// Magic values to be used in mmaped allocation headers
+#define MMAP_ALLOCATION_MAGIC 0xf12fc343
+
+// Page size for mmap allocations
+#define MMAP_PAGE_SIZE 12
 
 // Sanity checks
 #if BUDDY_ALLOCATOR_MIN_OBJECT - SLAB_ALLOCATOR_MAX_OBJECT != 1
@@ -81,5 +87,10 @@
 #if BUDDY_ALLOCATOR_SLOTS > 9
 #warning "Too many buddy allocator slots"
 #endif
+
+#if MMAP_PAGE_SIZE != 12
+#warning "Uncommon page size, if the page size is really not 4KiB, ignore this warning"
+#endif
+
 
 #endif

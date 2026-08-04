@@ -1,0 +1,8 @@
+{
+    global:
+        malloc;
+        free;
+
+    local:
+        *;
+};

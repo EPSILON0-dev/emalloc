@@ -45,6 +45,16 @@ generate-traces: $(TRACES_DIR)
 	python3 generate_trace.py -n 25000 -s 16 -m 262144 -o $(TRACES_DIR)/random_mixed_trace5.rep
 	python3 generate_trace.py -n 100000 -s 16 -m 262144 -o $(TRACES_DIR)/random_mixed_trace6.rep
 
+	python3 generate_trace.py -n 50 -s 1048577 -m  16777216 -o $(TRACES_DIR)/random_huge_trace1.rep
+	python3 generate_trace.py -n 150 -s 1048577 -m  16777216 -o $(TRACES_DIR)/random_huge_trace2.rep
+	python3 generate_trace.py -n 500 -s 1048577 -m  16777216 -o $(TRACES_DIR)/random_huge_trace3.rep
+
+	python3 generate_trace.py -n 50 -s 16 -m 4194304 -o $(TRACES_DIR)/random_full_range_trace1.rep
+	python3 generate_trace.py -n 150 -s 16 -m 4194304 -o $(TRACES_DIR)/random_full_range_trace2.rep
+	python3 generate_trace.py -n 500 -s 16 -m 4194304 -o $(TRACES_DIR)/random_full_range_trace3.rep
+	python3 generate_trace.py -n 2000 -s 16 -m 4194304 -o $(TRACES_DIR)/random_full_range_trace4.rep
+
+
 $(TRACES_DIR):
 	mkdir -p $(TRACES_DIR)
 

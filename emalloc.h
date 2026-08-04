@@ -99,16 +99,27 @@ struct buddy_header
     uint16_t magic2;
 
     // Bitmaps of all used slots for each slot size
-    // Stacked one after the other 
+    // Stacked one after the other
     // (512 bits - 1 slot), (256 bits - 2 slots), (128 bits - 4 slots), ( ... )
     uint8_t slot_bitmap[BUDDY_SLOT_BITMAP_BYTES];
 };
 
 typedef struct buddy_header buddy_header_t;
 
+struct mmap_header
+{
+    uint32_t magic1;
+    void* allocation_address;
+    size_t allocation_length;
+    uint32_t magic2;
+};
+
+typedef struct mmap_header mmap_header_t;
+
 void panic(const char* error);
 
 void* brk_alloc(size_t size);
+void *brk_get_allocated_heap_end(void);
 
 void* buddy_alloc(size_t size);
 void* buddy_alloc_slab(size_t size);
@@ -116,6 +127,9 @@ void buddy_free(void* ptr);
 
 void* slab_alloc(size_t size);
 void slab_free(void* ptr);
+
+void* mmap_alloc(size_t size);
+void mmap_free(void* ptr);
 
 void* emalloc(size_t size);
 void efree(void* ptr);

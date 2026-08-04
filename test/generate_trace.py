@@ -3,10 +3,9 @@
 Generate random malloc/free traces in the format expected by the trace runner.
 
 Format:
-  Line 1: Initial heap size
-  Line 2: Total number of operations
-  Line 3: Number of allocations
-  Line 4: Number of frees
+  Line 1: Total number of operations
+  Line 2: Number of allocations
+  Line 3: Number of frees
   Following lines: Operations
     a <id> <size>  - allocate
     f <id>         - free
