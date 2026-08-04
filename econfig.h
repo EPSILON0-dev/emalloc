@@ -15,6 +15,9 @@
 // Print out the buddy arenas when the program exits
 // #define DEBUG_DUMP_BUDDY_ARENAS
 
+// Panic when a free call fails instead of skipping deallocation
+#define DEBUG_PANIC_ON_FREE_FAIL
+
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
 
 // Increments of brk calls, usually the bigger the better as the kernel lazily allocates

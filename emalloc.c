@@ -19,5 +19,6 @@ void *emalloc(size_t size)
 
 void efree(void *ptr)
 {
+    // Free is always routed through the buddy allocator's free
     buddy_free(ptr);
 }

@@ -242,9 +242,9 @@ static size_t calculate_slot_size_index(size_t size)
     return 0;
 }
 
-static uint16_t find_indices_buddy(size_t index, size_t size_slot_index)
+static uint16_t find_indices_buddy(size_t index, size_t slot_size_index)
 {
-    return index ^ (1 << size_slot_index);
+    return index ^ (1 << slot_size_index);
 }
 
 static buddy_arena_t* find_arena_for_allocation(size_t slot_size_index)
@@ -270,13 +270,13 @@ static buddy_arena_t* find_arena_for_allocation(size_t slot_size_index)
     return chain_head.first_free_of_size[slot_size_index];
 }
 
-static size_t find_space_in_arena(buddy_arena_t* arena, size_t size_slot_index)
+static size_t find_space_in_arena(buddy_arena_t* arena, size_t slot_size_index)
 {
     // Use first fit for the allocation
-    const size_t area_length = 1 << size_slot_index;
+    const size_t area_length = 1 << slot_size_index;
     for (size_t i = 0; i < (1 << BUDDY_ALLOCATOR_SLOTS); i += area_length)
     {
-        if (get_alloc_in_slot_bitmap(arena, size_slot_index, i) == E_BIT_FREE)
+        if (get_alloc_in_slot_bitmap(arena, slot_size_index, i) == E_BIT_FREE)
         {
             return i;
         }
@@ -287,19 +287,19 @@ static size_t find_space_in_arena(buddy_arena_t* arena, size_t size_slot_index)
 }
 
 static void mark_space_in_arena(
-    buddy_arena_t* arena, size_t size_slot_index, size_t slot_index, bool state)
+    buddy_arena_t* arena, size_t slot_size_index, size_t slot_index, bool state)
 {
-    set_bit_in_slot_bitmap(arena, size_slot_index, slot_index, state);
+    set_bit_in_slot_bitmap(arena, slot_size_index, slot_index, state);
 }
 
-static buddy_arena_t* find_next_arena_with_free_slot(buddy_arena_t* arena, size_t size_slot_index)
+static buddy_arena_t* find_next_arena_with_free_slot(buddy_arena_t* arena, size_t slot_size_index)
 {
     while (((buddy_header_t*)arena)->next_arena != NULL)
     {
         buddy_arena_t* next_arena = ((buddy_header_t*)arena)->next_arena;
         buddy_header_t* next_header = next_arena;
 
-        if (next_header->free_slot_count_of_size[size_slot_index] > 0)
+        if (next_header->free_slot_count_of_size[slot_size_index] > 0)
         {
             return next_arena;
         }
@@ -312,29 +312,29 @@ static buddy_arena_t* find_next_arena_with_free_slot(buddy_arena_t* arena, size_
     return NULL;
 }
 
-static void update_chain_head_first_free(buddy_arena_t* arena, size_t size_slot_index)
+static void update_chain_head_first_free(buddy_arena_t* arena, size_t slot_size_index)
 {
-    buddy_arena_t* next_free = find_next_arena_with_free_slot(arena, size_slot_index);
-    chain_head.first_free_of_size[size_slot_index] = next_free;
+    buddy_arena_t* next_free = find_next_arena_with_free_slot(arena, slot_size_index);
+    chain_head.first_free_of_size[slot_size_index] = next_free;
     if (next_free != NULL)
     {
         uint32_t next_free_index = ((buddy_header_t*)next_free)->index_in_chain;
-        chain_head.first_free_of_size_index[size_slot_index] = next_free_index;
+        chain_head.first_free_of_size_index[slot_size_index] = next_free_index;
     }
 }
 
-static void* allocate_in_arena(buddy_arena_t* arena, size_t size_slot_index)
+static size_t allocate_in_arena(buddy_arena_t* arena, size_t slot_size_index)
 {
     buddy_header_t* header = (buddy_header_t*)arena;
 
     // Find the space and mark it as used
-    size_t slot_index = find_space_in_arena(arena, size_slot_index);
-    mark_space_in_arena(arena, size_slot_index, slot_index, E_BIT_USED);
+    size_t slot_index = find_space_in_arena(arena, slot_size_index);
+    mark_space_in_arena(arena, slot_size_index, slot_index, E_BIT_USED);
 
     // Update the size counts of object smaller or the same in size
-    for (size_t i = 0; i <= size_slot_index; i++)
+    for (size_t i = 0; i <= slot_size_index; i++)
     {
-        header->free_slot_count_of_size[i] -= 1 << (size_slot_index - i);
+        header->free_slot_count_of_size[i] -= 1 << (slot_size_index - i);
 
         // Update the pointers in head
         if (header->free_slot_count_of_size[i] == 0)
@@ -344,7 +344,7 @@ static void* allocate_in_arena(buddy_arena_t* arena, size_t size_slot_index)
     }
 
     // Update the larger slots if their buddies are not allocated
-    for (size_t i = size_slot_index + 1; i < BUDDY_ALLOCATOR_SIZES; i++)
+    for (size_t i = slot_size_index + 1; i < BUDDY_ALLOCATOR_SIZES; i++)
     {
         size_t buddy = find_indices_buddy(slot_index, i - 1);
 
@@ -363,8 +363,24 @@ static void* allocate_in_arena(buddy_arena_t* arena, size_t size_slot_index)
         }
     }
 
+    return slot_index;
+}
+
+static void* slot_index_to_ptr(buddy_arena_t* arena, size_t slot_index)
+{
     // Resolve the allocated address and return it
     return (void*)((uintptr_t)arena + (slot_index << BUDDY_ALLOCATOR_MIN_OBJECT));
+}
+
+static size_t slot_index_to_slab_slot_index(size_t slot_index)
+{
+    return slot_index >> (SLAB_ALLOCATOR_SLAB_SIZE - BUDDY_ALLOCATOR_MIN_OBJECT);
+}
+
+static void mark_slot_as_slab(buddy_arena_t* arena, size_t slot_index)
+{
+    const size_t slab_slot_index = slot_index_to_slab_slot_index(slot_index);
+    set_bit_in_slab_bitmap(arena, slab_slot_index, E_BIT_USED);
 }
 
 bool is_buddy_header(buddy_header_t* arena)
@@ -372,14 +388,26 @@ bool is_buddy_header(buddy_header_t* arena)
     return (arena->magic1 == BUDDY_ALLOCATOR_MAGIC1 && arena->magic2 == BUDDY_ALLOCATOR_MAGIC2);
 }
 
-int find_index_in_arena(void* arena, void* ptr, size_t* size_slot_index)
+static bool is_slab_index(buddy_arena_t* arena, size_t slot_index)
+{
+    const size_t slab_slot_index = slot_index_to_slab_slot_index(slot_index);
+    return get_bit_in_slab_bitmap(arena, slab_slot_index) == E_BIT_USED;
+}
+
+int find_index_in_arena(void* arena, void* ptr, size_t* slot_size_index)
 {
     if (!is_buddy_header(arena))
     {
-        return -EFAULT;
+        return -E_RESULT_ERROR;
     }
 
     const int slot_index = ((uintptr_t)(ptr - arena)) >> BUDDY_ALLOCATOR_MIN_OBJECT;
+
+    // Return early if slab slot hit
+    if (is_slab_index(arena, slot_index))
+    {
+        return -E_RESULT_SLAB_ALLOCATION;
+    }
 
     for (size_t i = 0; i < BUDDY_ALLOCATOR_SIZES; i++)
     {
@@ -390,11 +418,11 @@ int find_index_in_arena(void* arena, void* ptr, size_t* size_slot_index)
         if (get_bit_in_slot_bitmap(arena, i, slot_index) == E_BIT_FREE) continue;
 
         // Return the index and slot size
-        *size_slot_index = i;
+        *slot_size_index = i;
         return slot_index;
     }
 
-    return -EFAULT;
+    return -E_RESULT_ERROR;
 }
 
 static void free_and_update_counters(
@@ -483,7 +511,7 @@ static inline void verify_arena_bitmaps(buddy_header_t* header)
 }
 #endif
 
-void* buddy_alloc(size_t size)
+static void* buddy_alloc_internal(size_t size, bool mark_slab)
 {
     // Allocate the first block if needed
     if (chain_head.head_arena == NULL)
@@ -493,7 +521,13 @@ void* buddy_alloc(size_t size)
 
     size_t slot_size_index = calculate_slot_size_index(size);
     buddy_arena_t* arena = find_arena_for_allocation(slot_size_index);
-    void* ptr = allocate_in_arena(arena, slot_size_index);
+    size_t slot_index = allocate_in_arena(arena, slot_size_index);
+    void* ptr = slot_index_to_ptr(arena, slot_index);
+
+    if (mark_slab)
+    {
+        mark_slot_as_slab(arena, slot_index);
+    }
 
 #ifdef DEBUG_VERIFY_BUDDY_FREE_COUNTERS
     verify_arena_free_counters(arena);
@@ -506,22 +540,42 @@ void* buddy_alloc(size_t size)
     return ptr;
 }
 
+void* buddy_alloc(size_t size)
+{
+    return buddy_alloc_internal(size, false);
+}
+
+void* buddy_alloc_slab(size_t size)
+{
+    return buddy_alloc_internal(size, true);
+}
+
 void buddy_free(void* ptr)
 {
     const uintptr_t arena_mask = ~((1ULL << BUDDY_ALLOCATOR_ARENA_SIZE) - 1);
     buddy_arena_t* arena = (buddy_arena_t*)((uintptr_t)ptr & arena_mask);
     buddy_header_t* header = (buddy_arena_t*)arena;
 
-    size_t size_slot_index;
-    int slot_index = find_index_in_arena(arena, ptr, &size_slot_index);
+    size_t slot_size_index;
+    int slot_index = find_index_in_arena(arena, ptr, &slot_size_index);
 
-    // If failed to find the index don't deallocate
-    if (slot_index < 0)
+    // If it's a slab slot, route free to the slab deallocator
+    if (slot_index == -E_RESULT_SLAB_ALLOCATION)
     {
+        slab_free(ptr);
         return;
     }
 
-    free_and_update_counters(header, slot_index, size_slot_index);
+    // If failed to find the index, don't deallocate
+    if (slot_index < 0)
+    {
+#ifdef DEBUG_PANIC_ON_FREE_FAIL
+        panic("buddy allocator: free failed\n");
+#endif
+        return;
+    }
+
+    free_and_update_counters(header, slot_index, slot_size_index);
 
 #ifdef DEBUG_VERIFY_BUDDY_FREE_COUNTERS
     verify_arena_free_counters(arena);

@@ -116,7 +116,7 @@ static slab_t* allocate_new_slab(slab_chain_head_t* head)
     const size_t slab_size = (1 << SLAB_ALLOCATOR_SLAB_SIZE);
     const size_t object_size = head->object_size;
 
-    slab_t* slab = brk_alloc(slab_size);
+    slab_t* slab = buddy_alloc_slab(slab_size);
     slab_header_t* header = (slab_header_t*)slab;
 
     size_t bitmap_bytes = slab_size / object_size / 8 + !!(slab_size / object_size % 8);
@@ -237,17 +237,6 @@ static void* allocate_in_slab_chain(slab_chain_head_t* head)
     return (void*)((uintptr_t)allocated_slab + offset_in_slab);
 }
 
-void* slab_alloc(size_t size)
-{
-    if (size > (1 << SLAB_ALLOCATOR_MAX_OBJECT))
-    {
-        panic("slab allocator: alloc routing fault\n");
-    }
-
-    slab_chain_head_t* slab_chain = get_slab_chain_for_allocation(size);
-    return allocate_in_slab_chain(slab_chain);
-}
-
 bool is_slab_header(slab_header_t* slab)
 {
     return (slab->magic1 == SLAB_ALLOCATOR_MAGIC && slab->magic2 == SLAB_ALLOCATOR_MAGIC);
@@ -260,18 +249,29 @@ int find_index_in_slab(slab_t* slab, void* ptr)
     // Return if the object is misaligned
     if (((uintptr_t)ptr & (header->object_size - 1)) != 0)
     {
-        return EFAULT;
+        return E_RESULT_ERROR;
     }
 
     // Return if the we failed to locate the slab header
     if (!is_slab_header(header))
     {
-        return EFAULT;
+        return E_RESULT_ERROR;
     }
 
     // Return the index in the slab
     uintptr_t offset_in_slab = (uintptr_t)(ptr - slab);
     return offset_in_slab / header->object_size;
+}
+
+void* slab_alloc(size_t size)
+{
+    if (size > (1 << SLAB_ALLOCATOR_MAX_OBJECT))
+    {
+        panic("slab allocator: alloc routing fault\n");
+    }
+
+    slab_chain_head_t* slab_chain = get_slab_chain_for_allocation(size);
+    return allocate_in_slab_chain(slab_chain);
 }
 
 void slab_free(void* ptr)
@@ -283,6 +283,9 @@ void slab_free(void* ptr)
     // If finding the index failed, don't free
     if (index < 0)
     {
+#ifdef DEBUG_PANIC_ON_FREE_FAIL
+        panic("slab allocator: free failed\n");
+#endif
         return;
     }
 

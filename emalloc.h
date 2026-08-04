@@ -17,6 +17,13 @@ enum EBitmapSlot
     E_BIT_USED = 1,
 };
 
+enum EResult
+{
+    E_RESULT_OK = 0,
+    E_RESULT_ERROR = 1,
+    E_RESULT_SLAB_ALLOCATION = 2,
+};
+
 typedef void slab_t;
 
 struct slab_chain_head
@@ -104,6 +111,7 @@ void panic(const char* error);
 void* brk_alloc(size_t size);
 
 void* buddy_alloc(size_t size);
+void* buddy_alloc_slab(size_t size);
 void buddy_free(void* ptr);
 
 void* slab_alloc(size_t size);

@@ -8,7 +8,7 @@ copy_failing_trace()
 }
 
 while true; do 
-    python3 generate_trace.py -n 100000 -m 8192 -o trace_candidate.rep
+    python3 generate_trace.py -n 25000 -s 8192 -m 1000000 -o trace_candidate.rep
     ./run_trace ../emalloc.so trace_candidate.rep
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
