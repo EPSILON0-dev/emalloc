@@ -14,6 +14,16 @@ static struct
 
 static __attribute__((constructor)) void brk_manager_init(void)
 {
+    // Allocate dummy space to align the brk with a slab boundry
+    uintptr_t curr_brk = (uintptr_t)sbrk(0);
+    uintptr_t aligned_brk = curr_brk & ~((1ULL << BUDDY_ALLOCATOR_ARENA_SIZE) - 1);
+    if (aligned_brk != curr_brk)
+    {
+        uintptr_t next_aligned = aligned_brk + (1ULL << BUDDY_ALLOCATOR_ARENA_SIZE);
+        uintptr_t dummy_size = next_aligned - curr_brk;
+        sbrk(dummy_size);
+    }
+
     heap_state.current_size = 0;
     heap_state.current_used = 0;
     heap_state.current_free = 0;
@@ -33,7 +43,7 @@ void* brk_alloc(size_t size)
     }
 
     // Get the current end of brk
-    void *alloc_ptr = heap_state.allocated_heap_end;
+    void* alloc_ptr = heap_state.allocated_heap_end;
 
     // Allocate in the userspace brk
     heap_state.current_used += size;

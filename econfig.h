@@ -1,14 +1,31 @@
 #ifndef ECONFIG_H
 #define ECONFIG_H
 
+// It's called a config, but changing the allocation sizes will most likely break the whole thing :p
+
+// Print out the slab chains when the program exits
+// #define DEBUG_DUMP_SLAB_CHAINS
+
+// Check if buddy arena free counters were corrupted after every alloc or free
+// #define DEBUG_VERIFY_BUDDY_FREE_COUNTERS
+
+// Check if bitmaps match free counters after every alloc or free
+// #define DEBUG_VERIFY_BUDDY_BITMAPS
+
+// Print out the buddy arenas when the program exits
+// #define DEBUG_DUMP_BUDDY_ARENAS
+
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
+
+// Increments of brk calls, usually the bigger the better as the kernel lazily allocates
+//  the brk space
+#define BRK_ENLARGE_INCREMENT 23  // 8MiB
 
 // The allocation size with which mmap is called directly
 #define DIRECT_MMAP_THRESHOLD 20  // 1MiB
 
-// Increments of brk calls, usually the bigger the better as the kernel lazily allocates
-//  the brk space
-#define BRK_ENLARGE_INCREMENT 23 // 8MiB
+// Magic values to be used in slab allocator headers
+#define SLAB_ALLOCATOR_MAGIC 0x11ff22ff
 
 // The maximum and minimum object size for slab allocator
 #define SLAB_ALLOCATOR_MAX_OBJECT 13  // 8KiB
@@ -16,17 +33,50 @@
 #define SLAB_ALLOCATOR_SLAB_COUNT (SLAB_ALLOCATOR_MAX_OBJECT - SLAB_ALLOCATOR_MIN_OBJECT + 1)
 
 // Slab sizes for each object size
-#define SLAB_ALLOCATOR_SLAB_SIZES \
-    {                             \
-        16, /* 32B   - 64KiB  */  \
-        16, /* 64B   - 64KiB  */  \
-        16, /* 128B  - 64KiB  */  \
-        16, /* 256B  - 64KiB  */  \
-        17, /* 512B  - 128KiB */  \
-        17, /* 1KiB  - 128KiB */  \
-        18, /* 2KiB  - 256KiB */  \
-        18, /* 4KiB  - 256KiB */  \
-        19, /* 8KiB  - 512KiB */  \
-    }
+#define SLAB_ALLOCATOR_SLAB_SIZE 16  // 64KiB
+
+// Magic values to be used in slab allocator headers
+#define BUDDY_ALLOCATOR_MAGIC1 0xff88ff99
+#define BUDDY_ALLOCATOR_MAGIC2 0x3c33
+
+// The maximum and minimum object size for slab allocator
+#define BUDDY_ALLOCATOR_MAX_OBJECT 20  // 1MiB
+#define BUDDY_ALLOCATOR_MIN_OBJECT 14  // 16KiB
+
+// The size of a single chunk of memory a buddy allocator can allocate
+#define BUDDY_ALLOCATOR_ARENA_SIZE 23  // 8MiB
+
+#define BUDDY_ALLOCATOR_SLOTS (BUDDY_ALLOCATOR_ARENA_SIZE - BUDDY_ALLOCATOR_MIN_OBJECT)
+#define BUDDY_ALLOCATOR_SLOTS_PER_SLAB (SLAB_ALLOCATOR_SLAB_SIZE - BUDDY_ALLOCATOR_MIN_OBJECT)
+#define BUDDY_ALLOCATOR_SIZES (BUDDY_ALLOCATOR_MAX_OBJECT - BUDDY_ALLOCATOR_MIN_OBJECT + 1)
+#define BUDDY_ALLOCATOR_SLAB_SLOTS (BUDDY_ALLOCATOR_SLOTS - BUDDY_ALLOCATOR_SLOTS_PER_SLAB)
+
+#define BUDDY_SLAB_BITMAP_BYTES ((1 << BUDDY_ALLOCATOR_SLAB_SLOTS) / 8)
+#define BUDDY_SLOT_BITMAP_BYTES ((1 << BUDDY_ALLOCATOR_SLOTS) / 8 * 2)
+
+// Sanity checks
+#if BUDDY_ALLOCATOR_MIN_OBJECT - SLAB_ALLOCATOR_MAX_OBJECT != 1
+#error "Hybrid allocator gap, allocations can be too small for buddy and too large for slab"
+#endif
+
+#if DIRECT_MMAP_THRESHOLD > BUDDY_ALLOCATOR_MAX_OBJECT
+#error "Direct mmap too large for the buddy allocator to handle"
+#endif
+
+#if BRK_ENLARGE_INCREMENT - BUDDY_ALLOCATOR_ARENA_SIZE < 0
+#warning "brk increment too small, multiple syscalls per buddy arena allocation"
+#endif
+
+#if SLAB_ALLOCATOR_SLAB_SIZE - SLAB_ALLOCATOR_MAX_OBJECT < 2
+#warning "Slab size too small, high memory waste with large objects"
+#endif
+
+#if BUDDY_ALLOCATOR_ARENA_SIZE - SLAB_ALLOCATOR_SLAB_SIZE > 7
+#warning "Slab size too small, slab map too large for buddy allocator headers"
+#endif
+
+#if BUDDY_ALLOCATOR_SLOTS > 9
+#warning "Too many buddy allocator slots"
+#endif
 
 #endif

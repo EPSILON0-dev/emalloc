@@ -3,16 +3,21 @@
 
 void *emalloc(size_t size)
 {
-    if (size <= SLAB_ALLOCATOR_MAX_OBJECT)
+    void* ptr = NULL;
+
+    if (size <= (1 << SLAB_ALLOCATOR_MAX_OBJECT))
     {
-        return slab_alloc(size);
+        ptr = slab_alloc(size);
+    }
+    else if (size <= (1 << BUDDY_ALLOCATOR_MAX_OBJECT))
+    {
+        ptr = buddy_alloc(size);
     }
 
-    return NULL;
+    return ptr;
 }
 
 void efree(void *ptr)
 {
-    (void)ptr;
-    // pass
+    buddy_free(ptr);
 }

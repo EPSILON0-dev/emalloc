@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_ALLOCATIONS 10000
+#define MAX_ALLOCATIONS 100000
 
 void* allocations[MAX_ALLOCATIONS];
 size_t allocation_sizes[MAX_ALLOCATIONS];
@@ -66,8 +66,25 @@ int main(int argc, char* argv[])
     }
 
     void* allocator_lib = dlopen(argv[1], RTLD_LAZY);
+    if (!allocator_lib)
+    {
+        fprintf(stderr, "Failed to open the allocator library\n");
+        return 1;
+    }
+
     void* (*lib_malloc)(size_t size) = dlsym(allocator_lib, "malloc");
+    const char* err = dlerror();
+    if (err)
+    {
+        fprintf(stderr, "dlsym while loading malloc: %s\n", err);
+    }
+
     void (*lib_free)(void* ptr) = dlsym(allocator_lib, "free");
+    err = dlerror();
+    if (err)
+    {
+        fprintf(stderr, "dlsym while loading free: %s\n", err);
+    }
 
     FILE* fp = fopen(argv[2], "r");
     if (!fp)
@@ -76,16 +93,15 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    int heap_size, total_ops, num_allocs, num_frees;
-    if (fscanf(fp, "%d %d %d %d", &heap_size, &total_ops, &num_allocs, &num_frees) != 4)
+    int total_ops, num_allocs, num_frees;
+    if (fscanf(fp, "%d %d %d", &total_ops, &num_allocs, &num_frees) != 3)
     {
         fprintf(stderr, "Error reading trace header\n");
         fclose(fp);
         return 1;
     }
 
-    printf("Trace: heap_size=%d, total_ops=%d, allocs=%d, frees=%d\n", heap_size, total_ops,
-        num_allocs, num_frees);
+    printf("Trace: total_ops=%d, allocs=%d, frees=%d\n", total_ops, num_allocs, num_frees);
 
     for (int i = 0; i < MAX_ALLOCATIONS; i++)
     {
@@ -95,65 +111,66 @@ int main(int argc, char* argv[])
 
     int op_count = 0;
     char op_type;
-    int id, size;
+    int operation_index, size;
 
     while (fscanf(fp, " %c", &op_type) == 1)
     {
         if (op_type == 'a')
         {
-            if (fscanf(fp, "%d %d", &id, &size) != 2)
+            if (fscanf(fp, "%d %d", &operation_index, &size) != 2)
             {
                 fprintf(stderr, "Error parsing allocate operation\n");
                 break;
             }
 
-            if (id >= MAX_ALLOCATIONS)
+            if (operation_index >= MAX_ALLOCATIONS)
             {
-                fprintf(stderr, "Allocation id %d exceeds MAX_ALLOCATIONS\n", id);
+                fprintf(stderr, "Allocation id %d exceeds MAX_ALLOCATIONS\n", operation_index);
                 return 1;
             }
 
-            allocations[id] = lib_malloc(size);
-            if (!allocations[id])
+            allocations[operation_index] = lib_malloc(size);
+            if (!allocations[operation_index])
             {
                 fprintf(stderr, "malloc(%d) failed\n", size);
                 return 1;
             }
-            allocation_sizes[id] = size;
-            fill_allocation(allocations[id], size, id);
+            allocation_sizes[operation_index] = size;
+            fill_allocation(allocations[operation_index], size, operation_index);
             op_count++;
         }
 
         else if (op_type == 'f')
         {
-            if (fscanf(fp, "%d", &id) != 1)
+            if (fscanf(fp, "%d", &operation_index) != 1)
             {
                 fprintf(stderr, "Error parsing free operation\n");
                 break;
             }
 
-            if (id >= MAX_ALLOCATIONS)
+            if (operation_index >= MAX_ALLOCATIONS)
             {
-                fprintf(stderr, "Allocation id %d exceeds MAX_ALLOCATIONS\n", id);
+                fprintf(stderr, "Allocation id %d exceeds MAX_ALLOCATIONS\n", operation_index);
                 return 1;
             }
 
-            if (allocations[id] == NULL)
+            if (allocations[operation_index] == NULL)
             {
-                fprintf(stderr, "Freeing already-freed or unallocated block %d\n", id);
+                fprintf(stderr, "Freeing already-freed or unallocated block %d\n", operation_index);
                 return 1;
             }
 
-            if (!verify_allocation(allocations[id], allocation_sizes[id], id))
+            if (!verify_allocation(allocations[operation_index], allocation_sizes[operation_index],
+                    operation_index))
             {
-                fprintf(stderr, "Data integrity check failed for allocation %d (size %zu)\n", id,
-                    allocation_sizes[id]);
+                fprintf(stderr, "Data integrity check failed for allocation %d (size %zu)\n",
+                    operation_index, allocation_sizes[operation_index]);
                 return 1;
             }
 
-            lib_free(allocations[id]);
-            allocations[id] = NULL;
-            allocation_sizes[id] = 0;
+            lib_free(allocations[operation_index]);
+            allocations[operation_index] = NULL;
+            allocation_sizes[operation_index] = 0;
             op_count++;
         }
         else

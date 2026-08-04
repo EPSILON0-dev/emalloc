@@ -2,19 +2,41 @@
 #define EMALLOC_H
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <unistd.h>
+
+#include "econfig.h"
+
+enum EBitmapSlot
+{
+    E_BIT_FREE = 0,
+    E_BIT_USED = 1,
+};
+
+typedef void slab_t;
+
+struct slab_chain_head
+{
+    uint16_t object_size;
+
+    uint32_t slab_count;
+    uint32_t first_free_index;
+
+    slab_t* first_free_slab;
+    slab_t* first_slab;
+};
+
+typedef struct slab_chain_head slab_chain_head_t;
 
 struct slab_header
 {
-    // Size of the slab (memory allocated for objects)
-    uint32_t slab_size;
+    uint32_t magic1;
 
-    // Size and count of each object in this slab
+    // Size and count of each object in this slab (count includes the objects used by the header)
     uint16_t object_size;
     uint16_t object_count;
 
@@ -27,32 +49,65 @@ struct slab_header
     // First free object (refilled after a free or allocation)
     uint16_t first_free_index;
 
-    // Pointer to the next slab
-    void* next_slab;
-    
+    // Bookkeeping info for the slabs
+    uint32_t index_in_chain;
+    slab_chain_head_t* head;
+    slab_t* next_slab;
+
+    uint32_t magic2;
+
     // Bitmap of free objects
     uint8_t bitmap[];
 };
 
 typedef struct slab_header slab_header_t;
 
-struct slab_chain_head
+typedef void buddy_arena_t;
+
+struct buddy_chain_head
 {
-    uint32_t slab_size;
-    uint16_t object_size;
-    void *first_free_slab;
-    void *first_slab;
+    uint32_t arena_count;
+    uint16_t first_free_of_size_index[BUDDY_ALLOCATOR_SIZES];
+    buddy_arena_t* head_arena;
+    buddy_arena_t* tail_arena;
+    buddy_arena_t* first_free_of_size[BUDDY_ALLOCATOR_SIZES];
 };
 
-typedef struct slab_chain_head slab_chain_head_t;
+typedef struct buddy_chain_head buddy_chain_head_t;
 
-typedef void slab_t;
+struct buddy_header
+{
+    uint32_t magic1;
 
-void panic(const char *error);
+    // Bookkeeping for the arena chain
+    uint32_t index_in_chain;
+    buddy_arena_t* next_arena;
 
-void *brk_alloc(size_t size);
+    // Free slot counts
+    uint16_t free_slot_count_of_size[BUDDY_ALLOCATOR_SIZES];
+
+    // Bitmap of slots used by the slabs
+    uint8_t slab_bitmap[BUDDY_SLAB_BITMAP_BYTES];
+
+    uint16_t magic2;
+
+    // Bitmaps of all used slots for each slot size
+    // Stacked one after the other 
+    // (512 bits - 1 slot), (256 bits - 2 slots), (128 bits - 4 slots), ( ... )
+    uint8_t slot_bitmap[BUDDY_SLOT_BITMAP_BYTES];
+};
+
+typedef struct buddy_header buddy_header_t;
+
+void panic(const char* error);
+
+void* brk_alloc(size_t size);
+
+void* buddy_alloc(size_t size);
+void buddy_free(void* ptr);
 
 void* slab_alloc(size_t size);
+void slab_free(void* ptr);
 
 void* emalloc(size_t size);
 void efree(void* ptr);

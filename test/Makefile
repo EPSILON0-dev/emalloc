@@ -1,4 +1,4 @@
-CFLAGS = -O2 -Wall -Wextra
+CFLAGS = -g -O0 -Wall -Wextra
 LDFLAGS =
 
 TARGET = run_trace
@@ -18,11 +18,19 @@ $(OBJECTS): %.o: %.c
 build: $(TARGET)
 
 generate-traces: $(TRACES_DIR)
-	python3 generate_trace.py -n 50 -s 20000 -o $(TRACES_DIR)/random_trace1.rep
-	python3 generate_trace.py -n 150 -s 50000 -o $(TRACES_DIR)/random_trace2.rep
-	python3 generate_trace.py -n 500 -s 100000 -o $(TRACES_DIR)/random_trace3.rep
-	python3 generate_trace.py -n 2000 -s 1000000 -o $(TRACES_DIR)/random_trace4.rep
-	python3 generate_trace.py -n 10000 -s 10000000 -o $(TRACES_DIR)/random_trace5.rep
+	python3 generate_trace.py -n 50 -s 16 -m 8192 -o $(TRACES_DIR)/random_slab_trace1.rep
+	python3 generate_trace.py -n 150 -s 16 -m 8192 -o $(TRACES_DIR)/random_slab_trace2.rep
+	python3 generate_trace.py -n 500 -s 16 -m 8192 -o $(TRACES_DIR)/random_slab_trace3.rep
+	python3 generate_trace.py -n 2000 -s 16 -m 8192 -o $(TRACES_DIR)/random_slab_trace4.rep
+	python3 generate_trace.py -n 10000 -s 16 -m 8192 -o $(TRACES_DIR)/random_slab_trace5.rep
+	python3 generate_trace.py -n 100000 -s 16 -m 8192 -o $(TRACES_DIR)/random_slab_trace6.rep
+
+	python3 generate_trace.py -n 50 -s 8193 -m 1048576 -o $(TRACES_DIR)/random_buddy_trace1.rep
+	python3 generate_trace.py -n 150 -s 8193 -m 1048576 -o $(TRACES_DIR)/random_buddy_trace2.rep
+	python3 generate_trace.py -n 500 -s 8193 -m 1048576 -o $(TRACES_DIR)/random_buddy_trace3.rep
+	python3 generate_trace.py -n 2000 -s 8193 -m 1048576 -o $(TRACES_DIR)/random_buddy_trace4.rep
+	python3 generate_trace.py -n 25000 -s 8193 -m 1048576 -o $(TRACES_DIR)/random_buddy_trace5.rep
+	python3 generate_trace.py -n 100000 -s 8193 -m 131072 -o $(TRACES_DIR)/random_buddy_trace6.rep
 
 $(TRACES_DIR):
 	mkdir -p $(TRACES_DIR)
@@ -32,6 +40,8 @@ clean:
 
 clean-traces:
 	rm -rf $(TRACES_DIR)
+
+fresh: clean build
 
 distclean: clean clean-traces
 
