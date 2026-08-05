@@ -592,3 +592,26 @@ void buddy_free(void* ptr)
     verify_arena_bitmaps(arena);
 #endif
 }
+
+size_t buddy_get_realloc_size(void* ptr)
+{
+    const uintptr_t arena_mask = ~((1ULL << BUDDY_ALLOCATOR_ARENA_SIZE) - 1);
+    buddy_arena_t* arena = (buddy_arena_t*)((uintptr_t)ptr & arena_mask);
+
+    size_t slot_size_index;
+    int slot_index = find_index_in_arena(arena, ptr, &slot_size_index);
+
+    // If it's a slab slot, route free to the slab deallocator
+    if (slot_index == -E_RESULT_SLAB_ALLOCATION)
+    {
+        return slab_get_realloc_size(ptr);
+    }
+
+    if (slot_index < 0)
+    {
+        panic("buddy allocator: realloc failed\n");
+        return 0;
+    }
+
+    return 1 << (slot_size_index + BUDDY_ALLOCATOR_MIN_OBJECT);
+}

@@ -1,9 +1,15 @@
 #include "emalloc.h"
 
+#include <string.h>
+
 spinlock_t global_lock = SPINLOCK_INIT;
 
 void* emalloc(size_t size)
 {
+#ifdef DEBUG_LOG_CALLS
+    log_malloc_call_start(size);
+#endif
+
     spin_lock(&global_lock);
 
     void* ptr = NULL;
@@ -24,14 +30,64 @@ void* emalloc(size_t size)
     spin_unlock(&global_lock);
 
 #ifdef DEBUG_LOG_CALLS
-    log_malloc_call(ptr, size);
+    log_malloc_call_end(ptr);
 #endif
 
     return ptr;
 }
 
+void* ecalloc(size_t count, size_t size)
+{
+    if (size != 0 && count > SIZE_MAX / size)
+    {
+        return NULL;
+    }
+
+    const size_t actual_size = count * size;
+    void* ptr = emalloc(actual_size);
+
+    if (ptr != NULL)
+    {
+        memset(ptr, 0, actual_size);
+    }
+
+    return ptr;
+}
+
+void* erealloc(void* ptr, size_t size)
+{
+    if (ptr == NULL)
+    {
+        return emalloc(size);
+    }
+
+    if (size == 0)
+    {
+        efree(ptr);
+        return NULL;
+    }
+
+    const size_t old_size = get_realloc_size(ptr);
+    void* new_ptr = emalloc(size);
+
+    const size_t copy_size = (size < old_size) ? size : old_size;
+    memcpy(new_ptr, ptr, copy_size);
+
+    efree(ptr);
+    return new_ptr;
+}
+
 void efree(void* ptr)
 {
+    if (ptr == NULL)
+    {
+        return;
+    }
+
+#ifdef DEBUG_LOG_CALLS
+    log_free_call(ptr);
+#endif
+
     spin_lock(&global_lock);
 
     const void* heap_end = brk_get_allocated_heap_end();
@@ -47,8 +103,25 @@ void efree(void* ptr)
     }
 
     spin_unlock(&global_lock);
+}
 
-#ifdef DEBUG_LOG_CALLS
-    log_free_call(ptr);
-#endif
+size_t get_realloc_size(void* ptr)
+{
+    spin_lock(&global_lock);
+
+    const void* heap_end = brk_get_allocated_heap_end();
+    size_t size;
+
+    if (ptr > heap_end)
+    {
+        size = mmap_get_realloc_size(ptr);
+    }
+    else
+    {
+        // Slab get_realloc_size is routed through the buddy allocator
+        size = buddy_get_realloc_size(ptr);
+    }
+
+    spin_unlock(&global_lock);
+    return size;
 }

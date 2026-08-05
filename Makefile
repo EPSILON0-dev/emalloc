@@ -5,7 +5,7 @@ VARIANT ?= RELEASE
 TOOLCHAIN_PREFIX ?=
 CC ?= $(TOOLCHAIN_PREFIX)gcc
 
-SOURCES = emalloc.c malloc.c ebrk.c eslab.c eutil.c ebuddy.c emmap.c espinlock.c eapi.c
+SOURCES = emalloc.c ebrk.c eslab.c eutil.c ebuddy.c emmap.c espinlock.c eapi.c
 OBJECTS = $(SOURCES:.c=.o)
 MAPFILE = exports.map
 

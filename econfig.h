@@ -4,25 +4,28 @@
 // It's called a config, but changing the allocation sizes will most likely break the whole thing :p
 
 // Print out the slab chains when the program exits
-// #define DEBUG_DUMP_SLAB_CHAINS
+#define DEBUG_DUMP_SLAB_CHAINS
 
 // Check if buddy arena free counters were corrupted after every alloc or free
-// #define DEBUG_VERIFY_BUDDY_FREE_COUNTERS
+#define DEBUG_VERIFY_BUDDY_FREE_COUNTERS
 
 // Check if bitmaps match free counters after every alloc or free
-// #define DEBUG_VERIFY_BUDDY_BITMAPS
+#define DEBUG_VERIFY_BUDDY_BITMAPS
 
 // Print out the buddy arenas when the program exits
-// #define DEBUG_DUMP_BUDDY_ARENAS
+#define DEBUG_DUMP_BUDDY_ARENAS
 
 // Panic when a free call fails instead of skipping deallocation
 // #define DEBUG_PANIC_ON_FREE_FAIL
 
 // Log all calls without using the allocator for printf
-#define DEBUG_LOG_CALLS
+// #define DEBUG_LOG_CALLS
 
 // Log heap extensions with brk 
-#define DEBUG_LOG_HEAP_EXTENSIONS
+// #define DEBUG_LOG_HEAP_EXTENSIONS
+
+// Log a stuck spinlock if stuck for too long
+#define DEBUG_LOG_STUCK_SPINLOCKS
 
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
 

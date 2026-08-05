@@ -1,5 +1,7 @@
 {
     global:
+        calloc;
+        realloc;
         malloc;
         free;
 

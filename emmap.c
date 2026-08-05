@@ -73,3 +73,15 @@ void mmap_free(void* ptr)
         panic("mmap allocator: munmap failed\n");
     }
 }
+
+size_t mmap_get_realloc_size(void* ptr)
+{
+    if (!verify_mmap_header(ptr))
+    {
+        panic("mmap allocator: realloc failed\n");
+        return 0;
+    }
+
+    mmap_header_t* header = (mmap_header_t*)((uintptr_t)ptr - (1 << MMAP_PAGE_SIZE));
+    return header->allocation_length - (1 << MMAP_PAGE_SIZE);
+}

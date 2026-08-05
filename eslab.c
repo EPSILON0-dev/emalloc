@@ -313,3 +313,17 @@ void slab_free(void* ptr)
         header->head->first_free_slab = slab;
     }
 }
+
+size_t slab_get_realloc_size(void* ptr)
+{
+    slab_t* slab = (slab_t*)((uintptr_t)ptr & ~((1ULL << SLAB_ALLOCATOR_SLAB_SIZE) - 1));
+    slab_header_t* header = (slab_header_t*)slab;
+    int index = find_index_in_slab(slab, ptr);
+
+    if (index < 0)
+    {
+        panic("slab allocator: realloc failed\n");
+    }
+
+    return header->object_size;
+}
