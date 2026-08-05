@@ -1,6 +1,7 @@
 #include "emalloc.h"
 
 static slab_chain_head_t slab_heads[SLAB_ALLOCATOR_SLAB_COUNT];
+static bool ctor_done = false;
 
 static __attribute__((constructor)) void init_slab_heads(void)
 {
@@ -12,6 +13,7 @@ static __attribute__((constructor)) void init_slab_heads(void)
         slab_heads[i].first_free_slab = NULL;
         slab_heads[i].first_slab = NULL;
     }
+    ctor_done = true;
 }
 
 #ifdef DEBUG_DUMP_SLAB_CHAINS
@@ -265,6 +267,11 @@ int find_index_in_slab(slab_t* slab, void* ptr)
 
 void* slab_alloc(size_t size)
 {
+    if (!ctor_done)
+    {
+        panic("buddy allocator: malloc called before the constructors\n");
+    }
+
     if (size > (1 << SLAB_ALLOCATOR_MAX_OBJECT))
     {
         panic("slab allocator: alloc routing fault\n");

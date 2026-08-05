@@ -18,6 +18,12 @@
 // Panic when a free call fails instead of skipping deallocation
 // #define DEBUG_PANIC_ON_FREE_FAIL
 
+// Log all calls without using the allocator for printf
+#define DEBUG_LOG_CALLS
+
+// Log heap extensions with brk 
+#define DEBUG_LOG_HEAP_EXTENSIONS
+
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
 
 // Increments of brk calls, usually the bigger the better as the kernel lazily allocates

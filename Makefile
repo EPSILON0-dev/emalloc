@@ -1,12 +1,11 @@
-TARGET = emalloc
+TARGET = libemalloc
 TEST_TARGET = test
 VARIANT ?= RELEASE
 
 TOOLCHAIN_PREFIX ?=
 CC ?= $(TOOLCHAIN_PREFIX)gcc
-STRIP ?= $(TOOLCHAIN_PREFIX)strip
 
-SOURCES = emalloc.c malloc.c ebrk.c eslab.c eutil.c ebuddy.c emmap.c
+SOURCES = emalloc.c malloc.c ebrk.c eslab.c eutil.c ebuddy.c emmap.c espinlock.c eapi.c
 OBJECTS = $(SOURCES:.c=.o)
 MAPFILE = exports.map
 
@@ -17,11 +16,10 @@ else
 endif
 
 CFLAGS = -Wall -Wextra -fno-builtin-malloc -fno-builtin
-LDFLAGS =
+LDFLAGS = -fPIC
 
 $(TARGET).so: $(OBJECTS)
 	$(CC) -shared -Wl,--version-script=$(MAPFILE) $(OPTFLAGS) $(LDFLAGS) $(OBJECTS) -o $(TARGET).so
-	$(STRIP) $(TARGET).so
 
 $(OBJECTS): %.o: %.c
 	$(CC) -c $(OPTFLAGS) $(CFLAGS) $< -o $@

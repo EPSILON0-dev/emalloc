@@ -12,7 +12,9 @@ static struct
     void* allocated_heap_end;
 } heap_state;
 
-static __attribute__((constructor)) void brk_manager_init(void)
+bool heap_initialized = false;
+
+static void heap_init(void)
 {
     // Allocate dummy space to align the brk with a slab boundry
     uintptr_t curr_brk = (uintptr_t)sbrk(0);
@@ -29,10 +31,16 @@ static __attribute__((constructor)) void brk_manager_init(void)
     heap_state.current_free = 0;
     heap_state.heap_end = sbrk(0);
     heap_state.allocated_heap_end = heap_state.heap_end;
+    heap_initialized = true;
 }
 
 void* brk_alloc(size_t size)
 {
+    if (!heap_initialized)
+    {
+        heap_init();
+    }
+
     // Allocate more space from the kernel if needed
     while (size > heap_state.current_free)
     {
@@ -50,11 +58,15 @@ void* brk_alloc(size_t size)
     heap_state.current_free -= size;
     heap_state.allocated_heap_end = (void*)((uintptr_t)heap_state.allocated_heap_end + size);
 
+#ifdef DEBUG_LOG_HEAP_EXTENSIONS
+    log_heap_extension(heap_state.heap_end);
+#endif
+
     // Return the address of the allocation
     return alloc_ptr;
 }
 
-void *brk_get_allocated_heap_end(void)
+void* brk_get_allocated_heap_end(void)
 {
     return heap_state.allocated_heap_end;
 }

@@ -2,6 +2,7 @@
 #include "emalloc.h"
 
 static buddy_chain_head_t chain_head;
+static bool ctor_done = false;
 
 __attribute__((constructor)) static void init_chain_head(void)
 {
@@ -13,6 +14,7 @@ __attribute__((constructor)) static void init_chain_head(void)
         chain_head.first_free_of_size[i] = NULL;
         chain_head.first_free_of_size_index[i] = 0;
     }
+    ctor_done = true;
 }
 
 static inline void set_bit_in_slab_bitmap(buddy_header_t* header, size_t index, bool bit)
@@ -513,6 +515,11 @@ static inline void verify_arena_bitmaps(buddy_header_t* header)
 
 static void* buddy_alloc_internal(size_t size, bool mark_slab)
 {
+    if (!ctor_done)
+    {
+        panic("buddy allocator: malloc called before the constructors\n");
+    }
+
     // Allocate the first block if needed
     if (chain_head.head_arena == NULL)
     {

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdatomic.h>
 
 #include "econfig.h"
 
@@ -116,7 +117,19 @@ struct mmap_header
 
 typedef struct mmap_header mmap_header_t;
 
+struct spinlock
+{
+    atomic_flag locked;
+};
+
+typedef struct spinlock spinlock_t;
+
+#define SPINLOCK_INIT { ATOMIC_FLAG_INIT }
+
 void panic(const char* error);
+
+void spin_lock(spinlock_t* lock);
+void spin_unlock(spinlock_t* lock);
 
 void* brk_alloc(size_t size);
 void *brk_get_allocated_heap_end(void);
@@ -133,5 +146,9 @@ void mmap_free(void* ptr);
 
 void* emalloc(size_t size);
 void efree(void* ptr);
+
+void log_malloc_call(void *ptr, size_t size);
+void log_free_call(void *ptr);
+void log_heap_extension(void *ptr);
 
 #endif
