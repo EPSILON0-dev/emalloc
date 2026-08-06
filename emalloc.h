@@ -137,22 +137,21 @@ void *brk_get_allocated_heap_end(void);
 void* buddy_alloc(size_t size);
 void* buddy_alloc_slab(size_t size);
 void buddy_free(void* ptr);
-size_t buddy_get_realloc_size(void* ptr);
+size_t buddy_usable_size(void* ptr);
 
 void* slab_alloc(size_t size);
 void slab_free(void* ptr);
-size_t slab_get_realloc_size(void* ptr);
+size_t slab_usable_size(void* ptr);
 
 void* mmap_alloc(size_t size);
 void mmap_free(void* ptr);
-size_t mmap_get_realloc_size(void* ptr);
-
-size_t get_realloc_size(void* ptr);
+size_t mmap_usable_size(void* ptr);
 
 void* emalloc(size_t size);
 void* ecalloc(size_t count, size_t size);
 void* erealloc(void *ptr, size_t size);
 void efree(void* ptr);
+size_t emalloc_usable_size(void* ptr);
 
 void log_malloc_call_start(size_t size);
 void log_malloc_call_end(void *ptr);

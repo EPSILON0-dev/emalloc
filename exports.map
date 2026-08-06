@@ -4,6 +4,7 @@
         realloc;
         malloc;
         free;
+        malloc_usable_size;
 
     local:
         *;

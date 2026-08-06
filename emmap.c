@@ -74,7 +74,7 @@ void mmap_free(void* ptr)
     }
 }
 
-size_t mmap_get_realloc_size(void* ptr)
+size_t mmap_usable_size(void* ptr)
 {
     if (!verify_mmap_header(ptr))
     {

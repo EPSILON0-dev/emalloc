@@ -67,7 +67,7 @@ void* erealloc(void* ptr, size_t size)
         return NULL;
     }
 
-    const size_t old_size = get_realloc_size(ptr);
+    const size_t old_size = emalloc_usable_size(ptr);
     void* new_ptr = emalloc(size);
 
     const size_t copy_size = (size < old_size) ? size : old_size;
@@ -105,7 +105,7 @@ void efree(void* ptr)
     spin_unlock(&global_lock);
 }
 
-size_t get_realloc_size(void* ptr)
+size_t emalloc_usable_size(void* ptr)
 {
     spin_lock(&global_lock);
 
@@ -114,12 +114,12 @@ size_t get_realloc_size(void* ptr)
 
     if (ptr > heap_end)
     {
-        size = mmap_get_realloc_size(ptr);
+        size = mmap_usable_size(ptr);
     }
     else
     {
         // Slab get_realloc_size is routed through the buddy allocator
-        size = buddy_get_realloc_size(ptr);
+        size = buddy_usable_size(ptr);
     }
 
     spin_unlock(&global_lock);

@@ -19,3 +19,8 @@ void free(void* ptr)
 {
     efree(ptr);
 }
+
+size_t malloc_usable_size(void* ptr)
+{
+    return emalloc_usable_size(ptr);
+}

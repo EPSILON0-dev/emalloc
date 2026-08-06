@@ -575,7 +575,7 @@ void buddy_free(void* ptr)
 #endif
 }
 
-size_t buddy_get_realloc_size(void* ptr)
+size_t buddy_usable_size(void* ptr)
 {
     const uintptr_t arena_mask = ~((1ULL << BUDDY_ALLOCATOR_ARENA_SIZE) - 1);
     buddy_arena_t* arena = (buddy_arena_t*)((uintptr_t)ptr & arena_mask);
@@ -586,7 +586,7 @@ size_t buddy_get_realloc_size(void* ptr)
     // If it's a slab slot, route free to the slab deallocator
     if (slot_index == -E_RESULT_SLAB_ALLOCATION)
     {
-        return slab_get_realloc_size(ptr);
+        return slab_usable_size(ptr);
     }
 
     if (slot_index < 0)

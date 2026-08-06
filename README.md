@@ -111,17 +111,36 @@ The test verifies:
 ### Core Functions
 
 ```c
-void* emalloc(size_t size);           // Allocate memory
+void* emalloc(size_t size);               // Allocate memory
 void* ecalloc(size_t count, size_t size); // Allocate and zero
 void* erealloc(void *ptr, size_t size);   // Resize allocation
-void efree(void* ptr);                 // Deallocate memory
+void efree(void* ptr);                    // Deallocate memory
+size_t emalloc_usable_size(void *ptr);    // Get allocation size
+```
+
+### Exposed symbols
+
+```c
+// Currently implemented symbols
+void* malloc(size_t size);               // Allocate memory
+void* calloc(size_t count, size_t size); // Allocate and zero
+void* realloc(void *ptr, size_t size);   // Resize allocation
+void free(void* ptr);                    // Deallocate memory
+size_t malloc_usable_size(void *ptr);    // Get allocation size
+
+// Planned symbols:
+// posix_memalign
+// aligned_alloc
+// reallocarray
+// memalign
+// valloc/pvalloc
 ```
 
 ### Internal Functions
 
-- **Slab allocator**: `slab_alloc()`, `slab_free()`, `slab_get_realloc_size()`
-- **Buddy allocator**: `buddy_alloc()`, `buddy_free()`, `buddy_get_realloc_size()`, `buddy_alloc_slab()`
-- **mmap allocator**: `mmap_alloc()`, `mmap_free()`, `mmap_get_realloc_size()`
+- **Slab allocator**: `slab_alloc()`, `slab_free()`, `slab_usable_size()`
+- **Buddy allocator**: `buddy_alloc()`, `buddy_free()`, `buddy_usable_size()`, `buddy_alloc_slab()`
+- **mmap allocator**: `mmap_alloc()`, `mmap_free()`, `mmap_usable_size()`
 - **Heap management**: `brk_allocate_buddy_arena()`, `brk_get_allocated_heap_end()`
 - **Synchronization**: `spin_lock()`, `spin_unlock()`
 

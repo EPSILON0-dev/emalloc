@@ -314,7 +314,7 @@ void slab_free(void* ptr)
     }
 }
 
-size_t slab_get_realloc_size(void* ptr)
+size_t slab_usable_size(void* ptr)
 {
     slab_t* slab = (slab_t*)((uintptr_t)ptr & ~((1ULL << SLAB_ALLOCATOR_SLAB_SIZE) - 1));
     slab_header_t* header = (slab_header_t*)slab;

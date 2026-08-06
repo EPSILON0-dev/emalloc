@@ -41,7 +41,7 @@ void* brk_allocate_buddy_arena()
     heap_end = (void*)((uintptr_t)old_heap_end + arena_size);
 
 #ifdef DEBUG_LOG_HEAP_EXTENSIONS
-    log_heap_extension(heap_state.heap_end);
+    log_heap_extension(heap_end);
 #endif
 
     return alloc_ptr;
