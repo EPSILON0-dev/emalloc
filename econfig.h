@@ -27,14 +27,7 @@
 // Log a stuck spinlock if stuck for too long
 // #define DEBUG_LOG_STUCK_SPINLOCKS
 
-// Log detected heap tampering
-#define DEBUG_LOG_HEAP_TAMPERING
-
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
-
-// Increments of brk calls, usually the bigger the better as the kernel lazily allocates
-//  the brk space
-#define BRK_ENLARGE_INCREMENT 23  // 8MiB
 
 // The allocation size with which mmap is called directly
 #define DIRECT_MMAP_THRESHOLD 20  // 1MiB
@@ -84,10 +77,6 @@
 #error "Direct mmap too large for the buddy allocator to handle"
 #endif
 
-#if BRK_ENLARGE_INCREMENT - BUDDY_ALLOCATOR_ARENA_SIZE < 0
-#warning "brk increment too small, multiple syscalls per buddy arena allocation"
-#endif
-
 #if SLAB_ALLOCATOR_SLAB_SIZE - SLAB_ALLOCATOR_MAX_OBJECT < 2
 #warning "Slab size too small, high memory waste with large objects"
 #endif
@@ -103,6 +92,5 @@
 #if MMAP_PAGE_SIZE != 12
 #warning "Uncommon page size, if the page size is really not 4KiB, ignore this warning"
 #endif
-
 
 #endif

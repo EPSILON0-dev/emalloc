@@ -131,7 +131,7 @@ void panic(const char* error);
 void spin_lock(spinlock_t* lock);
 void spin_unlock(spinlock_t* lock);
 
-void* brk_alloc(size_t size);
+void* brk_allocate_buddy_arena();
 void *brk_get_allocated_heap_end(void);
 
 void* buddy_alloc(size_t size);

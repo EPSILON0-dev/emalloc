@@ -180,7 +180,7 @@ static __attribute__((destructor)) void dump_buddy_arenas(void)
 
 static buddy_arena_t* allocate_new_arena(void)
 {
-    buddy_arena_t* arena = brk_allocate_arena(1 << BUDDY_ALLOCATOR_ARENA_SIZE);
+    buddy_arena_t* arena = brk_allocate_buddy_arena();
     buddy_header_t* header = (buddy_header_t*)arena;
 
     header->magic1 = BUDDY_ALLOCATOR_MAGIC1;
