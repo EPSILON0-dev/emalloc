@@ -122,7 +122,7 @@ void efree(void* ptr);                 // Deallocate memory
 - **Slab allocator**: `slab_alloc()`, `slab_free()`, `slab_get_realloc_size()`
 - **Buddy allocator**: `buddy_alloc()`, `buddy_free()`, `buddy_get_realloc_size()`, `buddy_alloc_slab()`
 - **mmap allocator**: `mmap_alloc()`, `mmap_free()`, `mmap_get_realloc_size()`
-- **Heap management**: `brk_alloc()`, `brk_get_allocated_heap_end()`
+- **Heap management**: `brk_allocate_buddy_arena()`, `brk_get_allocated_heap_end()`
 - **Synchronization**: `spin_lock()`, `spin_unlock()`
 
 ## Implementation Details
