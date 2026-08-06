@@ -27,6 +27,9 @@
 // Log a stuck spinlock if stuck for too long
 // #define DEBUG_LOG_STUCK_SPINLOCKS
 
+// Log detected heap tampering
+#define DEBUG_LOG_HEAP_TAMPERING
+
 // All values below are powers of 2 (10 would be 2^10 = 1024, 11 would be 2 ^ 11 = 2048)
 
 // Increments of brk calls, usually the bigger the better as the kernel lazily allocates

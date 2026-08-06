@@ -158,5 +158,6 @@ void log_malloc_call_start(size_t size);
 void log_malloc_call_end(void *ptr);
 void log_free_call(void *ptr);
 void log_heap_extension(void *ptr);
+void log_heap_tamper(void *old_ptr, void* new_ptr);
 
 #endif

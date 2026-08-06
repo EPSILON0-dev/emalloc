@@ -1,21 +1,8 @@
 #include "econfig.h"
 #include "emalloc.h"
 
-static buddy_chain_head_t chain_head;
-static bool ctor_done = false;
-
-__attribute__((constructor)) static void init_chain_head(void)
-{
-    chain_head.arena_count = 0;
-    chain_head.head_arena = NULL;
-    chain_head.tail_arena = NULL;
-    for (int i = 0; i < BUDDY_ALLOCATOR_SIZES; i++)
-    {
-        chain_head.first_free_of_size[i] = NULL;
-        chain_head.first_free_of_size_index[i] = 0;
-    }
-    ctor_done = true;
-}
+// All fields are initialized to 0, no need for a constructor or an init function
+static buddy_chain_head_t chain_head = {};
 
 static inline void set_bit_in_slab_bitmap(buddy_header_t* header, size_t index, bool bit)
 {
@@ -193,7 +180,7 @@ static __attribute__((destructor)) void dump_buddy_arenas(void)
 
 static buddy_arena_t* allocate_new_arena(void)
 {
-    buddy_arena_t* arena = brk_alloc(1 << BUDDY_ALLOCATOR_ARENA_SIZE);
+    buddy_arena_t* arena = brk_allocate_arena(1 << BUDDY_ALLOCATOR_ARENA_SIZE);
     buddy_header_t* header = (buddy_header_t*)arena;
 
     header->magic1 = BUDDY_ALLOCATOR_MAGIC1;
@@ -515,11 +502,6 @@ static inline void verify_arena_bitmaps(buddy_header_t* header)
 
 static void* buddy_alloc_internal(size_t size, bool mark_slab)
 {
-    if (!ctor_done)
-    {
-        panic("buddy allocator: malloc called before the constructors\n");
-    }
-
     // Allocate the first block if needed
     if (chain_head.head_arena == NULL)
     {

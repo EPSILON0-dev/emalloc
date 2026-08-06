@@ -8,7 +8,6 @@ void spin_lock(spinlock_t* lock)
 
     while (atomic_flag_test_and_set_explicit(&lock->locked, memory_order_acquire))
     {
-        // Do nothing
 #ifdef DEBUG_LOG_STUCK_SPINLOCKS
         if (++spins > 100000000)
         {
